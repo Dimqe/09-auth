@@ -1,21 +1,21 @@
-import { ReactNode } from 'react';
+"use client"
 
-interface AuthLayoutProps {
-  children: ReactNode;
-}
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
-export default function AuthLayout({ children }: AuthLayoutProps) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '100vh',
-        backgroundColor: '#f0f2f5',
-      }}
-    >
-      {children}
-    </div>
-  );
+export interface PublicLayoutProps {
+    children: React.ReactNode;
+};
+
+export default function PublicLayout({ children }: PublicLayoutProps) {
+    const [loading, setLoading] = useState(true);
+
+    const router = useRouter();
+
+    useEffect(() => {
+        router.refresh();
+        setLoading(false);
+    }, [router]);
+
+    return <>{loading ? <div>Loading...</div> : children}</>;
 }

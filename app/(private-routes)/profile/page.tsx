@@ -1,34 +1,48 @@
-'use client';
+import Link from "next/link";
+import css from "./ProfilePage.module.css";
+import { Metadata } from "next";
+import Image from "next/image";
+import { getServeMe } from "@/lib/api/serverApi";
 
-import Image from 'next/image';
-import { useAuthStore } from '@/lib/store/authStore';
-import css from './ProfilePage.module.css';
+export const metadata: Metadata = {
+  title: "Profile Page",
+  description: "Page for current user",
+  openGraph: {
+    title: "Profile Page",
+    description: "Page for current user",
+    url: "",
+    images: [
+      {
+        url: "https://ac.global/fullstack/react/notehub-og-meta.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Page for current user",
+      },
+    ],
+  },
+};
 
-export default function Profile() {
-  const { user } = useAuthStore();
-
-  if (!user) return <div className={css.loader} aria-busy="true" />;
+const Profile = async () => {
+  const user = await getServeMe();
 
   return (
     <main className={css.mainContent}>
       <div className={css.profileCard}>
         <div className={css.header}>
           <h1 className={css.formTitle}>Profile Page</h1>
-          <a href="/profile/edit" className={css.editProfileButton}>
+          <Link href="/profile/edit" className={css.editProfileButton}>
             Edit Profile
-          </a>
+          </Link>
         </div>
-
         <div className={css.avatarWrapper}>
           <Image
-            src={user.avatar || '/default-avatar.png'}
+            src={user.avatar}
             alt="User Avatar"
             width={120}
             height={120}
             className={css.avatar}
           />
         </div>
-
         <div className={css.profileInfo}>
           <p>Username: {user.username}</p>
           <p>Email: {user.email}</p>
@@ -36,4 +50,6 @@ export default function Profile() {
       </div>
     </main>
   );
-}
+};
+
+export default Profile;

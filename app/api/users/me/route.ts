@@ -1,65 +1,55 @@
-import { NextResponse, NextRequest } from 'next/server';
+export const dynamic = 'force-dynamic';
+
+import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import axios, { isAxiosError } from 'axios';
 
-const EXTERNAL_API_URL = 'https://notehub-api.goit.study/users/me';
-
+import { isAxiosError } from 'axios';
+import { logErrorResponse } from '../../_utils/utils';
+import { api } from '../../api';
 
 export async function GET() {
   try {
-    const cookieStore = await cookies(); 
-    const token = cookieStore.get('accessToken');
+    const cookieStore = await cookies();
 
-    if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-    
-    const res = await axios.get(EXTERNAL_API_URL, {
+    const res = await api.get('/users/me', {
       headers: {
-        Cookie: `accessToken=${token.value}`,
+        Cookie: cookieStore.toString(),
       },
     });
-
-    return NextResponse.json(res.data, { status: 200 });
+    return NextResponse.json(res.data, { status: res.status });
   } catch (error) {
     if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
       return NextResponse.json(
-        error.response?.data || { message: 'Failed to fetch user' },
-        { status: error.response?.status || 500 }
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
       );
     }
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
-
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: Request) {
   try {
-    const cookieStore = await cookies(); 
-    const token = cookieStore.get('accessToken');
+    const cookieStore = await cookies();
     const body = await request.json();
 
-    if (!token) {
-      return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
-    }
-
-
-    const res = await axios.patch(EXTERNAL_API_URL, body, {
+    const res = await api.patch('/users/me', body, {
       headers: {
-        'Content-Type': 'application/json',
-        Cookie: `accessToken=${token.value}`,
+        Cookie: cookieStore.toString(),
       },
     });
-
-    return NextResponse.json(res.data, { status: 200 });
+    return NextResponse.json(res.data, { status: res.status });
   } catch (error) {
     if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
       return NextResponse.json(
-        error.response?.data || { message: 'Failed to update user' },
-        { status: error.response?.status || 500 }
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
       );
     }
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

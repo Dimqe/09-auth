@@ -1,46 +1,35 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import axios, { isAxiosError } from 'axios';
-
-
-const EXTERNAL_API_URL = 'https://notehub-api.goit.study/auth/logout';
+import { isAxiosError } from 'axios';
+import { api } from '../../api';
+import { logErrorResponse } from '../../_utils/utils';
 
 export async function POST() {
   try {
-    
     const cookieStore = await cookies();
-    const token = cookieStore.get('accessToken');
 
-    
-    if (token) {
-      await axios.post(EXTERNAL_API_URL, null, { 
-        headers: {
-          Cookie: `accessToken=${token.value}`,
-        },
-      });
-    }
+    const accessToken = cookieStore.get('accessToken')?.value;
+    const refreshToken = cookieStore.get('refreshToken')?.value;
 
-   
-    const response = NextResponse.json(
-      { message: 'Logged out successfully' },
-      { status: 200 }
-    );
+    await api.post('auth/logout', null, {
+      headers: {
+        Cookie: `accessToken=${accessToken}; refreshToken=${refreshToken}`,
+      },
+    });
 
-    
-    response.cookies.set('accessToken', '', { path: '/', maxAge: -1 });
-    response.cookies.set('refreshToken', '', { path: '/', maxAge: -1 });
+    cookieStore.delete('accessToken');
+    cookieStore.delete('refreshToken');
 
-    return response;
-
+    return NextResponse.json({ message: 'Logged out successfully' }, { status: 200 });
   } catch (error) {
- 
-    const response = NextResponse.json(
-        { message: 'Logout failed but cookies cleared' },
-        { status: isAxiosError(error) ? error.response?.status || 500 : 500 }
+    if (isAxiosError(error)) {
+      logErrorResponse(error.response?.data);
+      return NextResponse.json(
+        { error: error.message, response: error.response?.data },
+        { status: error.status }
       );
-    response.cookies.set('accessToken', '', { path: '/', maxAge: -1 });
-    response.cookies.set('refreshToken', '', { path: '/', maxAge: -1 });
-    return response;
+    }
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
-

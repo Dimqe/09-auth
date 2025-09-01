@@ -1,51 +1,55 @@
-import { NextResponse, NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
-import axios, { isAxiosError } from 'axios';
-
-
-const EXTERNAL_API_URL = 'https://notehub-api.goit.study/auth/session';
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { parse } from "cookie";
+import { isAxiosError } from "axios";
+import { api } from "../../api";
+import { logErrorResponse } from "../../_utils/utils";
 
 export async function GET() {
   try {
-  
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get('accessToken');
-    const refreshToken = cookieStore.get('refreshToken');
+    const accessToken = cookieStore.get("accessToken")?.value;
+    const refreshToken = cookieStore.get("refreshToken")?.value;
 
-    
-    let cookieString = '';
-    if (accessToken) cookieString += `accessToken=${accessToken.value};`;
-    if (refreshToken) cookieString += ` refreshToken=${refreshToken.value};`;
+    if (accessToken) {
+      return NextResponse.json({ success: true });
+    }
 
-    
-    const apiRes = await axios.get(EXTERNAL_API_URL, {
-      headers: {
-        Cookie: cookieString,
-      },
-    });
+    if (refreshToken) {
+      const apiRes = await api.get("auth/session", {
+        headers: {
+          Cookie: cookieStore.toString(),
+        },
+      });
 
-   
-    const response = NextResponse.json(apiRes.data, { status: 200 });
+      const setCookie = apiRes.headers["set-cookie"];
 
-    
-    const setCookie = apiRes.headers['set-cookie'];
-    if (setCookie) {
-     
-      for (const cookieStr of setCookie) {
-        const [name, value] = cookieStr.split(';')[0].split('=');
-        response.headers.append('Set-Cookie', cookieStr);
+      if (setCookie) {
+        const cookieArray = Array.isArray(setCookie) ? setCookie : [setCookie];
+        for (const cookieStr of cookieArray) {
+          const parsed = parse(cookieStr);
+
+          const options = {
+            expires: parsed.Expires ? new Date(parsed.Expires) : undefined,
+            path: parsed.Path,
+            maxAge: Number(parsed["Max-Age"]),
+          };
+
+          if (parsed.accessToken)
+            cookieStore.set("accessToken", parsed.accessToken, options);
+          if (parsed.refreshToken)
+            cookieStore.set("refreshToken", parsed.refreshToken, options);
+        }
+        return NextResponse.json({ success: true }, { status: 200 });
       }
     }
-
-    return response;
-    
+    return NextResponse.json({ success: false }, { status: 200 });
   } catch (error) {
-    
     if (isAxiosError(error)) {
-      return NextResponse.json(null, { status: 200 });
+      logErrorResponse(error.response?.data);
+      return NextResponse.json({ success: false }, { status: 200 });
     }
-    
-    return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
+    logErrorResponse({ message: (error as Error).message });
+    return NextResponse.json({ success: false }, { status: 200 });
   }
 }
-

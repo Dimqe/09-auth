@@ -1,52 +1,114 @@
-import { api } from './api';
-import type { User } from '@/types/user';
-import type { Note } from '@/types/note';
+"use client"
 
-export async function loginUser(data: { email: string; password: string }): Promise<User> {
-  const { data: user } = await api.post<User>('/auth/login', data);
-  return user;
+import type { User } from "@/types/user";
+import { nextServer } from "./api";
+import { FetchNotesParams, FetchNotesResponse, NewNote, Note, NotesResponse } from "@/types/note";
+
+
+export interface LoginRequest {
+    email: string;
+    password: string;
 }
 
-export async function registerUser(data: { email: string; password: string }): Promise<User> {
-  const { data: user } = await api.post<User>('/auth/register', data);
-  return user;
+export interface RegisterRequest {
+    email: string;
+    password: string;
 }
 
-export async function logoutUser(): Promise<void> {
-  await api.post('/auth/logout');
+export interface CheckSessionRequest {
+    success: boolean;
 }
 
-export async function getSession(): Promise<User | null> {
-  const { data } = await api.get<User | null>('/auth/session');
-  return data || null;
+export interface UpdateUserRequest {
+    username?: string;
 }
 
-export async function getMe(): Promise<User> {
-  const { data } = await api.get<User>('/users/me');
-  return data;
+export const register = async (data: RegisterRequest): Promise<User> => {
+    const res = await nextServer.post<User>("/auth/register", data);
+    return res.data;
+};
+
+export const loginUser = async (data: LoginRequest): Promise<User> => {
+    const res = await nextServer.post<User>("auth/login", data);
+    return res.data;
+};
+export const logoutUser = async (): Promise<void> => {
+    await nextServer.post("auth/logout");
+};
+
+export const checkSession = async (): Promise<boolean> => {
+    const res = await nextServer.get<CheckSessionRequest>("/auth/session");
+    return res.data.success;
 }
 
-export async function updateMe(payload: Partial<Pick<User, 'username'>>): Promise<User> {
-  const { data } = await api.patch<User>('/users/me', payload);
-  return data;
+export const getMe = async (): Promise<User> => {
+    const { data } = await nextServer.get<User>("users/me");
+    return data;
+};
+
+
+export const updateMe = async (payload: UpdateUserRequest) => {
+    const res = await nextServer.patch<User>("/users/me", payload);
+    return res.data;
 }
 
 
-export async function fetchNotes(): Promise<Note[]> {
-  const { data } = await api.get<Note[]>('/notes');
-  return data;
+export const fetchNotes = async ({tag, search, page = 1, perPage = 12}: FetchNotesParams): Promise<NotesResponse> => {
+    try {
+        const res = await nextServer.get<FetchNotesResponse>("/notes", {
+            params: {
+                tag,
+                page,
+                perPage,
+                ...(search?.trim() ? { search } : {}),
+            },
+        });
+
+        return {
+            page,
+            perPage,
+            data: res.data.notes,
+            totalPages: res.data.totalPages,
+        };
+        
+    } catch (error) {
+        throw error
+    }
 }
 
-export async function fetchNotesByTag(tag: string): Promise<Note[]> {
-  const { data } = await api.get<Note[]>('/notes', {
-    params: { tag },
-  });
-  return data;
+export const createNote = async (newNote: NewNote): Promise<Note> => {
+    try {
+        const res = await nextServer.post<Note>("/notes", newNote, {
+            headers: {
+                "Content-Type": "application/json",
+            },
+        },
+        );
+
+        return res.data;
+    } catch (error) {
+
+        throw error;
+    }
 }
 
-export async function fetchNoteById(id: string): Promise<Note> {
-  const { data } = await api.get<Note>(`/notes/${id}`);
-  return data;
+
+export const deleteNote = async (noteId: string): Promise<Note> => {
+    try {
+        const res = await nextServer.delete<Note>(`/notes/${noteId}`);
+    return res.data;
+    } catch (error) {
+
+        throw error;
+    }    
 }
 
-
+export const fetchNoteById = async (id: string): Promise<Note> => {
+    try {
+        const res = await nextServer.get<Note>(`/notes/${id}`);
+    return res.data;
+    } catch (error) {
+    
+        throw error;
+    }
+}

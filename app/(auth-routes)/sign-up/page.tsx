@@ -1,35 +1,50 @@
-'use client';
+"use client";
 
-import { useState, FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { registerUser } from '@/lib/api/clientApi';
-import { useAuthStore } from '@/lib/store/authStore';
-import css from './SignUp.module.css';
+import { useRouter } from "next/navigation";
+import css from "./SignUpPage.module.css";
+import { useState } from "react";
+import { ApiError } from "@/app/api/api";
+import { useAuthStore } from "@/lib/store/authStore";
+import { register } from "@/lib/api/clientApi";
 
-export default function SignUpPage() {
+export interface RegisterRequest {
+  email: string;
+  password: string;
+}
+
+const SignUp = () => {
   const router = useRouter();
-  const { setUser } = useAuthStore();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
+  const setUser = useAuthStore((state) => state.setUser);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError('');
-
+  const handleSubmit = async (formData: FormData) => {
     try {
-      const user = await registerUser({ email, password });
-      setUser(user);
-      router.push('/profile');
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      const formValues: RegisterRequest = {
+        email: formData.get("email") as string,
+        password: formData.get("password") as string,
+      };
+
+      const res = await register(formValues);
+
+      if (res) {
+        setUser(res);
+        router.push("/profile");
+      } else {
+        setError("Invalid email or password");
+      }
+    } catch (error) {
+      setError(
+        (error as ApiError).response?.data?.error ??
+          (error as ApiError).message ??
+          "Ooops...something gone wrong"
+      );
     }
   };
 
   return (
     <main className={css.mainContent}>
       <h1 className={css.formTitle}>Sign up</h1>
-      <form className={css.form} onSubmit={handleSubmit}>
+      <form className={css.form} action={handleSubmit}>
         <div className={css.formGroup}>
           <label htmlFor="email">Email</label>
           <input
@@ -38,8 +53,6 @@ export default function SignUpPage() {
             name="email"
             className={css.input}
             required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
           />
         </div>
 
@@ -51,17 +64,19 @@ export default function SignUpPage() {
             name="password"
             className={css.input}
             required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
           />
         </div>
 
         <div className={css.actions}>
-          <button type="submit" className={css.submitButton}>Register</button>
+          <button type="submit" className={css.submitButton}>
+            Register
+          </button>
         </div>
 
         {error && <p className={css.error}>{error}</p>}
       </form>
     </main>
   );
-}
+};
+
+export default SignUp;

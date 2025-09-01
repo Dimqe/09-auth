@@ -1,57 +1,35 @@
-'use client';
+"use client";
 
-import { useEffect, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
-import { getSession } from '@/lib/api/clientApi';
-import { useAuthStore } from '@/lib/store/authStore';
-import css from './AuthProvider.module.css';
+import { checkSession, getMe } from "@/lib/api/clientApi";
+import { useAuthStore } from "@/lib/store/authStore";
+import { useEffect } from "react";
 
-const PRIVATE_PREFIXES = ['/profile', '/notes'];
-
-interface AuthProviderProps {
+export interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-export default function AuthProvider({ children }: AuthProviderProps) {
-  const [checking, setChecking] = useState(true);
-  const router = useRouter();
-  const pathname = usePathname();
- 
-  const { setUser, clearAuth, isAuthenticated } = useAuthStore();
+const AuthProvider = ({ children }: AuthProviderProps) => {
+  const setUser = useAuthStore((state) => state.setUser);
+  const clearIsAuthenticated = useAuthStore(
+    (state) => state.clearIsAuthenticated
+  );
 
   useEffect(() => {
-    let ignore = false;
+    const fetchUser = async () => {
+      const isAuthenticated = await checkSession();
 
-   
-    if (isAuthenticated) {
-      setChecking(false);
-      return; 
-    }
+      if (isAuthenticated) {
+        const user = await getMe();
 
-
-    (async () => {
-      try {
-        const user = await getSession();
-        if (!ignore) {
-          setUser(user);
-
-          const isPrivate = PRIVATE_PREFIXES.some((p) => pathname.startsWith(p));
-          if (isPrivate && !user) {
-            clearAuth();
-            router.replace('/sign-in');
-            return;
-          }
-        }
-      } finally {
-        if (!ignore) setChecking(false);
+        if (user) setUser(user);
+      } else {
+        clearIsAuthenticated();
       }
-    })();
+    };
+    fetchUser();
+  }, [setUser, clearIsAuthenticated]);
 
-    return () => { ignore = true; };
-    
-  }, [pathname, router, setUser, clearAuth, isAuthenticated]);
+  return children;
+};
 
-  if (checking) return <div className={css.loader} aria-busy="true" />;
-
-  return <>{children}</>;
-}
+export default AuthProvider;

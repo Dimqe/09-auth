@@ -1,21 +1,21 @@
-import css from "./LayoutNotes.module.css"
+"use client"
 
-interface NotesLayoutProps {
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+export interface PublicLayoutProps {
     children: React.ReactNode;
-    sidebar: React.ReactNode;
-}
-
-
-const NotesLayout = ({ children, sidebar }: NotesLayoutProps) => {
-    
-
-    return (
-        <section className={css.container}>
-            <aside className={css.sidebar}>{sidebar}</aside>
-            <div className={css.notesWrapper}>{children}</div>
-        </section>
-    );
-    
 };
 
-export default NotesLayout;
+export default function PublicLayout({ children }: PublicLayoutProps) {
+    const [loading, setLoading] = useState(true);
+
+    const router = useRouter();
+
+    useEffect(() => {
+        router.refresh();
+        setLoading(false);
+    }, [router]);
+
+    return <>{loading ? <div>Loading...</div> : children}</>;
+}

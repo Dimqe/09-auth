@@ -11,7 +11,7 @@ const tags: NoteTag[] = [
   "Personal",
   "Meeting",
   "Shopping",
- 
+
 ];
 
 const TagsMenu = () => {

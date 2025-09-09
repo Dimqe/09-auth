@@ -22,30 +22,37 @@ const NotePreviewClient = ({ id }: NotePreviewClientProps) => {
 
     const handleClose = () => router.back();
 
-    if (isLoading) return <p>Loading, please wait...</p>;
-    if (error) return <p>Something went wrong.</p> ;
-    if (!note) return  <p>No note found</p>;
+    
+    if (isLoading) return <Modal onClose={handleClose}><p>Loading...</p></Modal>;
+    if (error) return <Modal onClose={handleClose}><p>Error loading note.</p></Modal>;
+    if (!note) return <Modal onClose={handleClose}><p>Note not found.</p></Modal>;
     
 
     return (
         <Modal onClose={handleClose}>
-            <div className={css.container}>
-                <div className={css.item}>
-                    {" "}
-                    <button className={css.backBtn} onClick={handleClose}>
-                        Back
-                    </button>
-                    <div className={css.header}>
-                        <h2>{note.title}</h2>
-                    </div>
-                    <p className={css.tag}>{note.tag}</p>
-                    <p className={css.content}>{note.content}</p>
-                    <p className={css.date}>{note.createdAt}</p>
-                </div>
+         
+            <div className={css.modalHeader}>
+             
+                <h2 className={css.title}>{note.title}</h2>
+                <button className={css.backBtn} onClick={handleClose}>
+                    Back
+                </button>
             </div>
+
+            <div className={css.modalBody}>
+              
+                <p className={css.content}>{note.content}</p>
+            </div>
+
+          
+            <div className={css.modalFooter}>
+              
+                <p className={css.tag}>{note.tag}</p>
+                <p className={css.date}>{note.createdAt}</p>
+            </div>
+
         </Modal>
     )
-
 }
-
+  
 export default NotePreviewClient;

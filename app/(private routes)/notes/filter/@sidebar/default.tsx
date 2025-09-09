@@ -8,7 +8,6 @@ const tags: NoteTag[] = [
   "Personal",
   "Meeting",
   "Shopping",
- 
 ];
 
 const SidebarNotes = () => {
